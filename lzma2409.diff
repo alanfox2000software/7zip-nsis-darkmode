@@ -1,0 +1,736 @@
+--- /dev/null
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/Bundles/SFXSetup/BannerDlg.cpp
+@@ -0,0 +1,111 @@
++// BannerDlg.cpp
++
++#include "BannerDlg.h"
++#include "resource.h"
++
++#define RECT_W(X) (((X).right > (X).left) ? ((X).right - (X).left) : 0)
++#define RECT_H(X) (((X).bottom > (X).top) ? ((X).bottom - (X).top) : 0)
++
++static const wchar_t *const DEF_TITLE   = L"Setup";
++static const wchar_t *const DEF_MESSAGE = L"Setup is launching, please stay tuned...";
++
++CBannerDlg::CBannerDlg(const HINSTANCE hInstance, const UString &title, const UString &message)
++:
++  _message(message)
++{
++  _hwnd = CreateWindowExW(0, L"#32770", title.IsEmpty() ? DEF_TITLE : title.Ptr(), WS_OVERLAPPED | WS_CAPTION | WS_THICKFRAME | WS_SYSMENU, CW_USEDEFAULT, CW_USEDEFAULT, 384, 96, NULL, NULL, hInstance, NULL);
++  if (_hwnd != NULL)
++  {
++    RECT workRect, wndRect;
++    HICON hIcon;
++    SetWindowLongPtrW(_hwnd, GWLP_WNDPROC, (LONG_PTR)&MyWndProc);
++    SetWindowLongPtrW(_hwnd, GWLP_USERDATA, (LONG_PTR)this);
++    SetWindowPos(_hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
++    if (SystemParametersInfoW(SPI_GETWORKAREA, 0, &workRect, 0) && GetWindowRect(_hwnd, &wndRect))
++    {
++      MoveWindow(_hwnd, (RECT_W(workRect)-RECT_W(wndRect))/2, (RECT_H(workRect)-RECT_H(wndRect))/2, RECT_W(wndRect), RECT_H(wndRect), true);
++    }
++    if((hIcon = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(IDI_ICON), IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR | LR_SHARED)) != NULL)
++    {
++      SendMessage(_hwnd, WM_SETICON, (WPARAM)ICON_SMALL, (LPARAM)hIcon);
++    }
++    if((hIcon = (HICON)LoadImageW(hInstance, MAKEINTRESOURCEW(IDI_ICON), IMAGE_ICON, 48, 48, LR_DEFAULTCOLOR | LR_SHARED)) != NULL)
++    {
++      SendMessage(_hwnd, WM_SETICON, (WPARAM)ICON_BIG, (LPARAM)hIcon);
++    }
++  }
++}
++
++CBannerDlg::~CBannerDlg(void)
++{
++  if (_hwnd != NULL)
++  {
++    DestroyWindow(_hwnd);
++    _hwnd = NULL;
++  }
++}
++
++bool CBannerDlg::Show(void)
++{
++  if (_hwnd != NULL)
++  {
++    ShowWindow(_hwnd, SW_SHOWNORMAL);
++    ProcessPendingMessages();
++    Sleep(125);
++    SetForegroundWindow(_hwnd);
++    SetCapture(_hwnd);
++    return true;
++  }
++  return false;
++}
++
++LRESULT CALLBACK CBannerDlg::MyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
++{
++  switch(uMsg)
++  {
++  case WM_PAINT:
++    PAINTSTRUCT ps;
++    if(const HDC hdc = BeginPaint(hwnd, &ps))
++    {
++      const CBannerDlg *const self = (const CBannerDlg*)GetWindowLongPtrW(hwnd, GWLP_USERDATA);
++      FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
++      DrawTextExW(hdc, (LPWSTR)(self->_message.IsEmpty() ? DEF_MESSAGE : self->_message.Ptr()), -1, &ps.rcPaint, DT_CENTER|DT_SINGLELINE|DT_VCENTER, NULL);
++      EndPaint(hwnd, &ps);
++    }
++  case WM_CLOSE:
++    return 0; /*ignore WM_CLOSE msg*/
++  default:
++    return DefWindowProc(hwnd, uMsg, wParam, lParam);
++  }
++}
++
++void CBannerDlg::ProcessPendingMessages()
++{
++  if (_hwnd != NULL)
++  {
++    MSG msg = {};
++    for (Byte i = 0U; i < 8U; ++i)
++    {
++      BOOL flag = FALSE;
++      if(i > 0U)
++      {
++        Sleep(1); /*delay*/
++      }
++      for (UInt16 k = 0U; k < 8192U; ++k)
++      {
++        if (PeekMessageW(&msg, _hwnd, 0U, 0U, PM_REMOVE))
++        {
++          flag = TRUE;
++          TranslateMessage(&msg);
++          DispatchMessageW(&msg);
++          continue;
++        }
++        break;
++      }
++      if(!flag)
++      {
++        break; /*did not process any messages*/
++      }
++    }
++  }
++}
+--- /dev/null
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/Bundles/SFXSetup/BannerDlg.h
+@@ -0,0 +1,22 @@
++// BannerDlg.h
++
++#include "../../../Common/MyString.h"
++
++#define WIN32_LEAN_AND_MEAN
++#include <windows.h>
++
++class CBannerDlg
++{
++public:
++  CBannerDlg(const HINSTANCE hInstance, const UString &title, const UString &message);
++  ~CBannerDlg(void);
++  bool Show(void);
++  void ProcessPendingMessages();
++  HWND Hwnd() const { return _hwnd; }
++private:
++  CBannerDlg(CBannerDlg const&) {}
++  CBannerDlg& operator=(const CBannerDlg&) {}
++  static LRESULT CALLBACK MyWndProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
++  HWND _hwnd;
++  const UString _message;
++};
+--- /dev/null
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/Bundles/SFXSetup/Compat.xml
+@@ -0,0 +1 @@
++<?xml version="1.0" encoding="utf-8"?><assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0"><compatibility xmlns="urn:schemas-microsoft-com:compatibility.v1"><application><supportedOS Id="{e2011457-1546-43c5-a5fe-008deee3d3f0}"/><supportedOS Id="{35138b9a-5d96-4fbd-8e2d-a2440225f93a}"/><supportedOS Id="{4a2f28e3-53b9-4441-ba9c-d69d4a4a6e38}"/><supportedOS Id="{1f676c76-80e1-4239-95bb-83d0f6d0da78}"/><supportedOS Id="{8e0f7a12-bfb3-4fe8-b9a5-48fd50a15a9a}"/></application></compatibility></assembly>
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/7zip/Bundles/SFXSetup/SfxSetup.cpp
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/Bundles/SFXSetup/SfxSetup.cpp
+@@ -1,6 +1,7 @@
+ // Main.cpp
+ 
+ #include "StdAfx.h"
++#include <memory>
+ 
+ #include "../../../../C/DllSecur.h"
+ 
+@@ -24,6 +25,8 @@
+ 
+ #include "ExtractEngine.h"
+ 
++#include "BannerDlg.h"
++
+ #include "resource.h"
+ 
+ using namespace NWindows;
+@@ -41,12 +44,32 @@
+ 
+ #define MY_SHELL_EXECUTE
+ 
++static HWND GetCurrentHwnd(void)
++{
++  HWND result = ::GetActiveWindow();
++  if(!(result && IsWindowVisible(result)))
++  {
++    for (UInt32 i = 0; i < 256; ++i)
++    {
++      ::Sleep(1); /*some delay*/
++      if(const HWND hwnd = ::GetForegroundWindow())
++      {
++        if(IsWindowVisible(result = hwnd))
++        {
++          break; /*success*/
++        }
++      }
++    }
++  }
++  return result;
++}
++
+ static bool ReadDataString(CFSTR fileName, LPCSTR startID,
+     LPCSTR endID, AString &stringResult)
+ {
+   stringResult.Empty();
+   NIO::CInFile inFile;
+-  if (!inFile.Open(fileName))
++  if (!inFile.OpenSafely(fileName))
+     return false;
+   const size_t kBufferSize = (1 << 12);
+ 
+@@ -151,7 +174,7 @@
+ 
+   UString archiveName, switches;
+   #ifdef MY_SHELL_EXECUTE
+-  UString executeFile, executeParameters;
++  UString executeFile, executeParameters, launchingMsg, executeErrorMsg;
+   #endif
+   NCommandLineParser::SplitCommandLine(GetCommandLineW(), archiveName, switches);
+ 
+@@ -177,7 +200,7 @@
+ 
+   UString dirPrefix ("." STRING_PATH_SEPARATOR);
+   UString appLaunched;
+-  bool showProgress = true;
++  bool showProgress = !switches.IsPrefixedBy_Ascii_NoCase("-ms") && !switches.IsPrefixedBy_Ascii_NoCase("/ini") && !switches.IsPrefixedBy_Ascii_NoCase("/s");
+   if (!config.IsEmpty())
+   {
+     CObjectVector<CTextConfigPair> pairs;
+@@ -197,7 +220,7 @@
+       dirPrefix = pairs[index].String;
+     if (!installPrompt.IsEmpty() && !assumeYes)
+     {
+-      if (MessageBoxW(NULL, installPrompt, friendlyName, MB_YESNO |
++      if (MessageBoxW(NULL, installPrompt, friendlyName, MB_YESNO | MB_SYSTEMMODAL |
+           MB_ICONQUESTION) != IDYES)
+         return 0;
+     }
+@@ -206,6 +229,8 @@
+     #ifdef MY_SHELL_EXECUTE
+     executeFile = GetTextConfigValue(pairs, "ExecuteFile");
+     executeParameters = GetTextConfigValue(pairs, "ExecuteParameters");
++    launchingMsg = GetTextConfigValue(pairs, "LaunchingMsg");
++    executeErrorMsg = GetTextConfigValue(pairs, "ExecuteErrorMsg");
+     #endif
+   }
+ 
+@@ -249,7 +274,7 @@
+         {
+           if (errorMessage.IsEmpty())
+             errorMessage = NError::MyFormatMessage(result);
+-          ::MessageBoxW(NULL, errorMessage, NWindows::MyLoadString(IDS_EXTRACTION_ERROR_TITLE), MB_ICONERROR);
++          ::MessageBoxW(NULL, errorMessage, NWindows::MyLoadString(IDS_EXTRACTION_ERROR_TITLE), MB_ICONERROR | MB_SYSTEMMODAL);
+         }
+       }
+       return 1;
+@@ -293,13 +318,33 @@
+     execInfo.lpDirectory = NULL;
+     execInfo.nShow = SW_SHOWNORMAL;
+     execInfo.hProcess = NULL;
+-    /* BOOL success = */ ::ShellExecuteEx(&execInfo);
+-    UINT32 result = (UINT32)(UINT_PTR)execInfo.hInstApp;
+-    if (result <= 32)
++
++    std::unique_ptr<CBannerDlg> banner;
++    if(showProgress)
++      banner.reset(new CBannerDlg(hInstance, executeFile, launchingMsg));
++    for (;;)
+     {
+-      if (!assumeYes)
+-        ShowErrorMessage(L"Cannot open file");
+-      return 1;
++       if(banner)
++         banner->Show();
++       execInfo.hwnd = (banner && (banner->Hwnd() != NULL)) ? banner->Hwnd() : GetCurrentHwnd(); /*prevent UAC dialog from appearing in the background!*/
++       const BOOL success = ::ShellExecuteEx(&execInfo);
++       const UINT32 result = success ? ((UINT32)(UINT_PTR)execInfo.hInstApp) : 0U;
++       if (result <= 32)
++       {
++         if(banner)
++           banner->ProcessPendingMessages();
++         if (!assumeYes)
++         {
++           const wchar_t *const lpErrorMessage = executeErrorMsg.IsEmpty() ? L"Failed to launch setup program. Please try again!" : executeErrorMsg;
++           const HWND hwnd = banner ? banner->Hwnd() : NULL;
++           if (MessageBoxW(hwnd, lpErrorMessage, executeFile.Ptr(), (hwnd ? MB_TOPMOST : MB_SYSTEMMODAL) | MB_ICONEXCLAMATION | MB_RETRYCANCEL) == IDRETRY)
++           {
++             continue; /*retry*/
++           }
++         }
++         return 1;
++       }
++       break; /*success*/
+     }
+     hProcess = execInfo.hProcess;
+   }
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/7zip/Bundles/SFXSetup/resource.rc
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/Bundles/SFXSetup/resource.rc
+@@ -1,14 +1,14 @@
+ #include "../../MyVersionInfo.rc"
+ #include "resource.h"
+ 
+-MY_VERSION_INFO_APP("7z Setup SFX", "7zS.sfx")
++MY_VERSION_INFO_APP("Setup SFX", "7zS.sfx")
+ 
+ IDI_ICON  ICON "setup.ico"
+ 
+ STRINGTABLE
+ BEGIN
+   IDS_EXTRACTION_ERROR_TITLE  "Extraction Failed"
+-  IDS_EXTRACTION_ERROR_MESSAGE  "File is corrupt"
++  IDS_EXTRACTION_ERROR_MESSAGE  "File is corrupt. Please download again!"
+   IDS_CANNOT_CREATE_FOLDER  "Cannot create folder '{0}'"
+   IDS_PROGRESS_EXTRACTING  "Extracting"
+ END
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/7zip/UI/Explorer/MyMessages.cpp
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/UI/Explorer/MyMessages.cpp
+@@ -16,7 +16,7 @@
+ void ShowErrorMessage(HWND window, LPCWSTR message)
+ {
+   if (!g_DisableUserQuestions)
+-    ::MessageBoxW(window, message, L"7-Zip", MB_OK | MB_ICONSTOP);
++    ::MessageBoxW(window, message, L"Setup", MB_OK | MB_SYSTEMMODAL | MB_ICONSTOP);
+ }
+ 
+ void ShowErrorMessageHwndRes(HWND window, UInt32 resID)
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/7zip/UI/FileManager/ProgressDialog.cpp
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/7zip/UI/FileManager/ProgressDialog.cpp
+@@ -170,7 +170,7 @@
+       bool paused = Sync.GetPaused();
+       Sync.SetPaused(true);
+       _inCancelMessageBox = true;
+-      int res = ::MessageBoxW(*this, L"Are you sure you want to cancel?", _title, MB_YESNOCANCEL);
++      int res = ::MessageBoxW(*this, L"Are you sure you want to cancel?", _title, MB_YESNOCANCEL | MB_SYSTEMMODAL);
+       _inCancelMessageBox = false;
+       Sync.SetPaused(paused);
+       if (res == IDCANCEL || res == IDNO)
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/Windows/FileDir.cpp
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/Windows/FileDir.cpp
+@@ -1,8 +1,8 @@
+ // Windows/FileDir.cpp
+ 
+ #include "StdAfx.h"
++#include <ShlObj.h>
+ 
+-
+ #ifndef _WIN32
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -15,9 +15,8 @@
+ #include <sys/stat.h>
+ #include <sys/types.h>
+ 
+-#include "../Common/C_FileIO.h"
+-#include "../Common/MyBuffer2.h"
+ #include "../Common/StringConvert.h"
++#include "../Common/C_FileIO.h"
+ #endif
+ 
+ #include "FileDir.h"
+@@ -28,6 +27,9 @@
+ extern bool g_IsNT;
+ #endif
+ 
++static CFSTR kTempDirName = FTEXT("TEMP");
++
++
+ using namespace NWindows;
+ using namespace NFile;
+ using namespace NName;
+@@ -121,6 +123,36 @@
+   }
+   return (len != 0 && len < kBufSize);
+ }
++
++bool GetAppDataDir(FString &path)
++{
++  HRESULT hResult;
++  static const int FolderId[] = { CSIDL_LOCAL_APPDATA, CSIDL_APPDATA, CSIDL_PROFILE, NULL };
++  for(size_t i = 0; i < 3; ++i)
++  {
++    #ifndef _UNICODE
++    if (!g_IsNT)
++    {
++      TCHAR s[MAX_PATH + 2];
++      s[0] = 0;
++      hResult = ::SHGetFolderPath(NULL, FolderId[i] | CSIDL_FLAG_CREATE, NULL, 0, s);
++      path = fas2fs(s);
++    }
++    else
++    #endif
++    {
++      WCHAR s[MAX_PATH + 2];
++      s[0] = 0;
++      hResult = ::SHGetFolderPathW(NULL, FolderId[i] | CSIDL_FLAG_CREATE, NULL, 0, s);
++      path = us2fs(s);
++    }
++    if(hResult == S_OK)
++    {
++      return true; /*success*/
++    }
++  }
++  return false;
++}
+ #endif // UNDER_CE
+ 
+ 
+@@ -223,8 +255,6 @@
+ }
+ 
+ 
+-// When moving a directory, oldFile and newFile must be on the same drive.
+-
+ bool MyMoveFile(CFSTR oldFile, CFSTR newFile)
+ {
+   #ifndef _UNICODE
+@@ -253,59 +283,6 @@
+   return false;
+ }
+ 
+-#if defined(Z7_WIN32_WINNT_MIN) && Z7_WIN32_WINNT_MIN >= 0x0500
+-static DWORD WINAPI CopyProgressRoutine_to_ICopyFileProgress(
+-  LARGE_INTEGER TotalFileSize,          // file size
+-  LARGE_INTEGER TotalBytesTransferred,  // bytes transferred
+-  LARGE_INTEGER /* StreamSize */,             // bytes in stream
+-  LARGE_INTEGER /* StreamBytesTransferred */, // bytes transferred for stream
+-  DWORD /* dwStreamNumber */,                 // current stream
+-  DWORD /* dwCallbackReason */,               // callback reason
+-  HANDLE /* hSourceFile */,                   // handle to source file
+-  HANDLE /* hDestinationFile */,              // handle to destination file
+-  LPVOID lpData                         // from CopyFileEx
+-)
+-{
+-  return ((ICopyFileProgress *)lpData)->CopyFileProgress(
+-      (UInt64)TotalFileSize.QuadPart,
+-      (UInt64)TotalBytesTransferred.QuadPart);
+-}
+-#endif
+-
+-bool MyMoveFile_with_Progress(CFSTR oldFile, CFSTR newFile,
+-    ICopyFileProgress *progress)
+-{
+-#if defined(Z7_WIN32_WINNT_MIN) && Z7_WIN32_WINNT_MIN >= 0x0500
+-#ifndef _UNICODE
+-  if (g_IsNT)
+-#endif
+-  if (progress)
+-  {
+-    IF_USE_MAIN_PATH_2(oldFile, newFile)
+-    {
+-      if (::MoveFileWithProgressW(fs2us(oldFile), fs2us(newFile),
+-          CopyProgressRoutine_to_ICopyFileProgress, progress, MOVEFILE_COPY_ALLOWED))
+-        return true;
+-      if (::GetLastError() == ERROR_REQUEST_ABORTED)
+-        return false;
+-    }
+-    #ifdef Z7_LONG_PATH
+-    if (USE_SUPER_PATH_2)
+-    {
+-      UString d1, d2;
+-      if (GetSuperPaths(oldFile, newFile, d1, d2, USE_MAIN_PATH_2))
+-        return BOOLToBool(::MoveFileWithProgressW(d1, d2,
+-            CopyProgressRoutine_to_ICopyFileProgress, progress, MOVEFILE_COPY_ALLOWED));
+-    }
+-    #endif
+-    return false;
+-  }
+-#else
+-  UNUSED_VAR(progress)
+-#endif
+-  return MyMoveFile(oldFile, newFile);
+-}
+-
+ #ifndef UNDER_CE
+ #if !defined(Z7_WIN32_WINNT_MIN) || Z7_WIN32_WINNT_MIN < 0x0500  // Win2000
+ #define Z7_USE_DYN_CreateHardLink
+@@ -894,13 +871,42 @@
+   return false;
+ }
+ 
++static bool CreateTempFileSafely(CFSTR prefix, bool addRandom, FString &tempPath, AString &postfix, NIO::COutFile *outFile)
++{
++  if (MyGetTempPath(tempPath))
++  {
++    if (CreateTempFile2(tempPath + prefix, addRandom, postfix, outFile))
++    {
++      return true;
++    }
++  }
++  for(Byte retry = 0; retry < 2; ++retry)
++  {
++    if (retry ? GetWindowsDir(tempPath) : GetAppDataDir(tempPath))
++    {
++      tempPath.Add_PathSepar();
++      tempPath += kTempDirName;
++      if(CreateComplexDir(tempPath))
++      {
++        tempPath.Add_PathSepar();
++        if (CreateTempFile2(tempPath + prefix, addRandom, postfix, outFile))
++        {
++          return true;
++        }
++      }
++    }
++  }
++  return false;
++}
++
+ bool CTempFile::Create(CFSTR prefix, NIO::COutFile *outFile)
+ {
+   if (!Remove())
+     return false;
+   _path.Empty();
++  FString tempPath;
+   AString postfix;
+-  if (!CreateTempFile2(prefix, false, postfix, outFile))
++  if (!CreateTempFileSafely(prefix, false, tempPath, postfix, outFile))
+     return false;
+   _path = prefix;
+   _path += postfix;
+@@ -914,11 +920,8 @@
+     return false;
+   _path.Empty();
+   FString tempPath;
+-  if (!MyGetTempPath(tempPath))
+-    return false;
+   AString postfix;
+-  tempPath += namePrefix;
+-  if (!CreateTempFile2(tempPath, true, postfix, outFile))
++  if (!CreateTempFileSafely(namePrefix, true, tempPath, postfix, outFile))
+     return false;
+   _path = tempPath;
+   _path += postfix;
+@@ -930,25 +933,45 @@
+ {
+   if (!_mustBeDeleted)
+     return true;
+-  _mustBeDeleted = !DeleteFileAlways(_path);
+-  return !_mustBeDeleted;
++  for(UInt32 i = 0; i < 256; ++i)
++  {
++    if(i)
++      ::Sleep(i);
++    if(DeleteFileAlways(_path))
++    {
++      _mustBeDeleted = false;
++      return true;
++    }
++  }
++  return false;
+ }
+ 
+-bool CTempFile::MoveTo(CFSTR name, bool deleteDestBefore,
+-    ICopyFileProgress *progress)
++bool CTempFile::MoveTo(CFSTR name, bool deleteDestBefore)
+ {
++  // DWORD attrib = 0;
+   if (deleteDestBefore)
+   {
+     if (NFind::DoesFileExist_Raw(name))
+     {
+       // attrib = NFind::GetFileAttrib(name);
+-      if (!DeleteFileAlways(name))
++      bool deleted = false;
++      for(UInt32 i = 0; i < 256; ++i)
++      {
++        if(i)
++          ::Sleep(i);
++        if(DeleteFileAlways(name))
++        {
++          deleted = true;
++          break;
++        }
++      }
++      if (!deleted)
+         return false;
+     }
+   }
+   DisableDeleting();
+-  // if (!progress) return MyMoveFile(_path, name);
+-  return MyMoveFile_with_Progress(_path, name, progress);
++  return MyMoveFile(_path, name);
++  
+   /*
+   if (attrib != INVALID_FILE_ATTRIBUTES && (attrib & FILE_ATTRIBUTE_READONLY))
+   {
+@@ -966,11 +989,8 @@
+     return false;
+   _path.Empty();
+   FString tempPath;
+-  if (!MyGetTempPath(tempPath))
+-    return false;
+-  tempPath += prefix;
+   AString postfix;
+-  if (!CreateTempFile2(tempPath, true, postfix, NULL))
++  if (!CreateTempFileSafely(prefix, true, tempPath, postfix, NULL))
+     return false;
+   _path = tempPath;
+   _path += postfix;
+@@ -982,8 +1002,17 @@
+ {
+   if (!_mustBeDeleted)
+     return true;
+-  _mustBeDeleted = !RemoveDirWithSubItems(_path);
+-  return !_mustBeDeleted;
++  for(UInt32 i = 0; i < 256; ++i)
++  {
++    if(i)
++      ::Sleep(i);
++    if(RemoveDirWithSubItems(_path))
++    {
++      _mustBeDeleted = false;
++      return true;
++    }
++  }
++  return false;
+ }
+ #endif
+ 
+@@ -997,59 +1026,34 @@
+ }
+ 
+ 
+-static BOOL My_CopyFile(CFSTR oldFile, CFSTR newFile, ICopyFileProgress *progress)
++static BOOL My_CopyFile(CFSTR oldFile, CFSTR newFile)
+ {
++  NWindows::NFile::NIO::COutFile outFile;
++  if (!outFile.Create_NEW(newFile))
++    return FALSE;
++  
++  NWindows::NFile::NIO::CInFile inFile;
++  if (!inFile.Open(oldFile))
++    return FALSE;
++
++  char buf[1 << 14];
++
++  for (;;)
+   {
+-    NIO::COutFile outFile;
+-    if (!outFile.Create_NEW(newFile))
++    const ssize_t num = inFile.read_part(buf, sizeof(buf));
++    if (num == 0)
++      return TRUE;
++    if (num < 0)
+       return FALSE;
+-    NIO::CInFile inFile;
+-    if (!inFile.Open(oldFile))
++    size_t processed;
++    const ssize_t num2 = outFile.write_full(buf, (size_t)num, processed);
++    if (num2 != num || processed != (size_t)num)
+       return FALSE;
+-    
+-    const size_t k_BufSize = 1 << 16;
+-    CAlignedBuffer1 buf(k_BufSize);
+-    
+-    UInt64 length = 0;
+-    if (progress && !inFile.GetLength(length))
+-      length = 0;
+-    UInt64 prev = 0;
+-    UInt64 cur = 0;
+-    for (;;)
+-    {
+-      const ssize_t num = inFile.read_part(buf, k_BufSize);
+-      if (num == 0)
+-        return TRUE;
+-      if (num < 0)
+-        break;
+-      size_t processed;
+-      const ssize_t num2 = outFile.write_full(buf, (size_t)num, processed);
+-      if (num2 != num || processed != (size_t)num)
+-        break;
+-      cur += (size_t)num2;
+-      if (progress && cur - prev >= (1u << 20))
+-      {
+-        prev = cur;
+-        if (progress->CopyFileProgress(length, cur) != PROGRESS_CONTINUE)
+-        {
+-          errno = EINTR; // instead of WIN32::ERROR_REQUEST_ABORTED
+-          break;
+-        }
+-      }
+-    }
+   }
+-  // There is file IO error or process was interrupted by user.
+-  // We close output file and delete it.
+-  // DeleteFileAlways doesn't change errno (if successed), but we restore errno.
+-  const int errno_save = errno;
+-  DeleteFileAlways(newFile);
+-  errno = errno_save;
+-  return FALSE;
+ }
+ 
+ 
+-bool MyMoveFile_with_Progress(CFSTR oldFile, CFSTR newFile,
+-    ICopyFileProgress *progress)
++bool MyMoveFile(CFSTR oldFile, CFSTR newFile)
+ {
+   int res = rename(oldFile, newFile);
+   if (res == 0)
+@@ -1057,7 +1061,7 @@
+   if (errno != EXDEV) // (oldFile and newFile are not on the same mounted filesystem)
+     return false;
+ 
+-  if (My_CopyFile(oldFile, newFile, progress) == FALSE)
++  if (My_CopyFile(oldFile, newFile) == FALSE)
+     return false;
+     
+   struct stat info_file;
+@@ -1069,11 +1073,6 @@
+   ret = chmod(dst,info_file.st_mode & g_umask.mask);
+   */
+   return (unlink(oldFile) == 0);
+-}
+-
+-bool MyMoveFile(CFSTR oldFile, CFSTR newFile)
+-{
+-  return MyMoveFile_with_Progress(oldFile, newFile, NULL);
+ }
+ 
+ 
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/Windows/FileIO.cpp
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/Windows/FileIO.cpp
+@@ -454,6 +454,18 @@
+ bool CInFile::OpenShared(CFSTR fileName, bool shareForWrite)
+ { return Open(fileName, FILE_SHARE_READ | (shareForWrite ? FILE_SHARE_WRITE : 0), OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL); }
+ 
++bool CInFile::OpenSafely(CFSTR fileName)
++{
++  for (UInt32 i = 0; i < 256; ++i)
++  {
++    if(i)
++      ::Sleep(i);
++    if (Open(fileName))
++      return true;
++  }
++  return false;
++}
++
+ bool CInFile::Open(CFSTR fileName)
+   { return OpenShared(fileName, false); }
+ 
+--- D:\Downloads\nsis-with-dark-mode\lzma2409/CPP/Windows/FileIO.h
++++ D:\Downloads\nsis-with-dark-mode\lzma2409_b/CPP/Windows/FileIO.h
+@@ -233,6 +233,7 @@
+   bool Open(CFSTR fileName, DWORD shareMode, DWORD creationDisposition, DWORD flagsAndAttributes);
+   bool OpenShared(CFSTR fileName, bool shareForWrite);
+   bool Open(CFSTR fileName);
++  bool OpenSafely(CFSTR fileName);
+ 
+ #if 0
+   bool AttachStdIn()
