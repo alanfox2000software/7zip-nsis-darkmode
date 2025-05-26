@@ -7,11 +7,11 @@ set "Build_Root=%~dp0"
 rem 7-zip version
 rem https://www.7-zip.org/
 set version=7z2409
-set dark_version=24.09-v0.4.4.0
+set ztsd_dark_version=24.09-v1.5.7-R1-v0.5.0.0
 
 rem VC-LTL version
 rem https://github.com/Chuyu-Team/VC-LTL5
-set "VC_LTL_Ver=5.1.1"
+set "VC_LTL_Ver=5.2.1"
 
 :VS_Version
 if defined APPVEYOR_BUILD_WORKER_IMAGE (
@@ -20,7 +20,6 @@ if defined APPVEYOR_BUILD_WORKER_IMAGE (
   )
 )
 if "%VisualStudioVersion%" == "17.0" goto :VS2022
-if exist "%VSAPPIDDIR%\..\..\VC\Auxiliary\Build\vcvarsall.bat" == "15.0" goto :VS2017
 
 :VS2022
 set "VS=VS2022"
@@ -48,20 +47,19 @@ goto :CheckReqSucc
 
 :CheckReqFail
 echo Prerequisites Check Failed.
-echo Visual Studio 2022 or 2019 or 2017 or 2015 should be installed,
+echo Visual Studio 2022 should be installed,
 echo or try to run this script from "Developer Command Prompt".
 echo 7z should be in PATH or current folder.
 timeout /t 5 || pause
 goto :End
 
 :CheckReqSucc
-
 :Download_7zip
-call :Download https://github.com/ozone10/7zip-Dark7zip/archive/v%dark_version%.zip %dark_version%.zip
-"%_7z%" x %dark_version%.zip
-if exist "7zip-Dark7zip-%dark_version%" (
-  "%_7z%" x bmp_ico.zip -y -o"%~dp07zip-Dark7zip-%dark_version%"
-  cd "7zip-Dark7zip-%dark_version%"
+call :Download https://github.com/ozone10/7zip-Dark7zip/archive/v%ztsd_dark_version%.zip %ztsd_dark_version%.zip
+"%_7z%" x %ztsd_dark_version%.zip
+if exist "7zip-Dark7zip-%ztsd_dark_version%" (
+  "%_7z%" x bmp_ico.zip -y -o"%~dp07zip-Dark7zip-%ztsd_dark_version%"
+  cd "7zip-Dark7zip-%ztsd_dark_version%"
 ) else (
   echo "source not found"
   exit /b 1
@@ -73,7 +71,7 @@ rem call :Download https://bitbucket.org/muldersoft/7zsd.sfx-mod/raw/c6069e36db8
 call :Do_Shell_Exec 7-zip-patch.sh
 
 :Init_VC_LTL
-set "VC_LTL_File_Name=VC-LTL-%VC_LTL_Ver%-Binary.7z"
+set "VC_LTL_File_Name=VC-LTL-Binary.7z"
 set "VC_LTL_URL=https://github.com/Chuyu-Team/VC-LTL5/releases/download/v%VC_LTL_Ver%/%VC_LTL_File_Name%"
 set "VC_LTL_Dir=VC-LTL"
 mkdir "%VC_LTL_Dir%"
@@ -108,9 +106,7 @@ echo %LIB%
 echo ----------------
 
 :Build_x64
-pushd CPP\7zip
-nmake /S NEW_COMPILER=1 MY_STATIC_LINK=1 CPU=AMD64 PLATFORM=x64
-popd
+call :Build_CPP_ZSTD /S NEW_COMPILER=1 MY_STATIC_LINK=1 CPU=AMD64 PLATFORM=x64
 
 pushd C\Util\7z
 nmake /S NEW_COMPILER=1 MY_STATIC_LINK=1 CPU=AMD64 PLATFORM=x64
@@ -153,9 +149,7 @@ echo %LIB%
 echo ----------------
 
 :Build_x86
-pushd CPP\7zip
-nmake /S NEW_COMPILER=1 MY_STATIC_LINK=1
-popd
+call :Build_CPP_ZSTD /S NEW_COMPILER=1 MY_STATIC_LINK=1
 
 pushd C\Util\7z
 nmake /S NEW_COMPILER=1 MY_STATIC_LINK=1
@@ -200,74 +194,11 @@ if exist 7-zip-x86\7-zip.dll copy 7-zip-x86\7-zip.dll 7-zip-x64\7-zip32.dll
 mkdir installer
 cd installer
 call :Download https://www.7-zip.org/a/%version%-x64.exe %version%-x64.exe
-call :Download https://www.tc4shell.com/binary/Modern7z.zip Modern7z.zip
-call :Download https://www.tc4shell.com/binary/WinCryptHashers.zip WinCryptHashers.zip
-call :Download https://www.tc4shell.com/binary/Asar.zip Asar.zip
-call :Download https://www.tc4shell.com/binary/eDecoder.zip eDecoder.zip
-call :Download https://www.tc4shell.com/binary/Py7z.zip Py7z.zip
-call :Download https://www.tc4shell.com/binary/Iso7z.zip Iso7z.zip
-call :Download https://www.tc4shell.com/binary/MFilter.zip MFilter.zip
-call :Download https://www.tc4shell.com/binary/Phar7z.zip Phar7z.zip
-call :Download https://www.tc4shell.com/binary/Forensic7z.zip Forensic7z.zip
-call :Download https://www.tc4shell.com/binary/Smart7z.zip Smart7z.zip
-call :Download https://www.tc4shell.com/binary/ExFat7z.zip ExFat7z.zip
-call :Download https://www.tc4shell.com/binary/Grit7z.zip Grit7z.zip
-call :Download https://www.tc4shell.com/binary/WavPack7z.zip WavPack7z.zip
-call :Download https://www.tc4shell.com/binary/Thumbs7z.zip Thumbs7z.zip
-call :Download https://www.tc4shell.com/binary/Lzip.zip Lzip.zip
 "%_7z%" x %version%-x64.exe
-"%_7z%" x Modern7z.zip -x^^!ReadMe.txt
-"%_7z%" x WinCryptHashers.zip -x^^!ReadMe.txt
-"%_7z%" x Asar.zip -x^^!ReadMe.txt
-"%_7z%" x eDecoder.zip -x^^!ReadMe.txt
-"%_7z%" x Py7z.zip -x^^!ReadMe.txt
-"%_7z%" x Iso7z.zip -x^^!ReadMe.txt
-"%_7z%" x MFilter.zip -x^^!ReadMe.txt
-"%_7z%" x Phar7z.zip -x^^!ReadMe.txt
-"%_7z%" x Forensic7z.zip -x^^!ReadMe.txt
-"%_7z%" x Smart7z.zip -x^^!ReadMe.txt
-"%_7z%" x Grit7z.zip -x^^!ReadMe.txt
-"%_7z%" x WavPack7z.zip -y -x^^!ReadMe.txt
-"%_7z%" x Thumbs7z.zip -x^^!ReadMe.txt
-"%_7z%" x Lzip.zip -x!ReadMe.txt
 xcopy /S /G /H /R /Y /Q .\Lang ..\7-zip-x86\Lang
 xcopy /S /G /H /R /Y /Q .\Lang ..\7-zip-x64\Lang
-xcopy /S /G /H /R /Y /Q .\64 ..\7-zip-x64\Codecs
-xcopy /S /G /H /R /Y /Q .\32 ..\7-zip-x86\Codecs
-xcopy /S /G /H /R /Y /Q .\WinCryptHashers.64.dll  ..\7-zip-x64\Codecs
-xcopy /S /G /H /R /Y /Q .\WinCryptHashers.32.dll  ..\7-zip-x86\Codecs
-xcopy /S /G /H /R /Y /Q .\WinCryptHashers.ini  ..\7-zip-x64\Codecs
-xcopy /S /G /H /R /Y /Q .\WinCryptHashers.ini  ..\7-zip-x86\Codecs
-xcopy /S /G /H /R /Y /Q .\Asar.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Asar.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\eDecoder.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\eDecoder.32.dll  ..\7-zip-x86\Formats\
-xcopy /S /G /H /R /Y /Q .\Py7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Py7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Iso7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Iso7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Phar7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Phar7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Forensic7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Forensic7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7z.ini  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7z.ini  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7zIniEditor.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7zIniEditor.32.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7z.fav  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Smart7z.fav  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\ExFat.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\ExFat.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Grit7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Grit7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Thumbs7z.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Thumbs7z.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Lzip.64.dll  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Lzip.32.dll  ..\7-zip-x86\Formats
-xcopy /S /G /H /R /Y /Q .\Lzip.ini  ..\7-zip-x64\Formats
-xcopy /S /G /H /R /Y /Q .\Lzip.ini  ..\7-zip-x86\Formats
+xcopy /S /G /H /R /Y /Q "%Build_Root%\plugins\64" ..\7-zip-x64
+xcopy /S /G /H /R /Y /Q "%Build_Root%\plugins\32" ..\7-zip-x86
 xcopy /S /G /H /R /Y /Q ..\..\..\DarkMode\7zDark.ini  ..\7-zip-x64
 xcopy /S /G /H /R /Y /Q ..\..\..\DarkMode\7zDark.ini  ..\7-zip-x86
 
@@ -302,4 +233,71 @@ goto :Do_Shell_Exec_End
 :Do_Shell_Exec_End
 exit /b %ERRORLEVEL%
 
+:Build_CPP_ZSTD
+set "OPTS=%*"
+pushd CPP\7zip\Bundles\Format7zExtract
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Format7z
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Format7zF
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\UI\FileManager
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\UI\GUI
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\UI\Explorer
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\SFXWin
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Codec_brotli
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Codec_lizard
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Codec_lz4
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Codec_lz5
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Codec_zstd
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Codec_flzma2
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\UI\Console
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\SFXCon
+nmake %OPTS%
+popd
+
+pushd CPP\7zip\Bundles\Alone
+nmake %OPTS%
+popd
+
+exit /b
 

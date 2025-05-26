@@ -7,12 +7,12 @@ set "Build_Root=%~dp0"
 rem 7-zip version
 rem https://www.7-zip.org/
 set version=7z2409
-set dark_version=24.09-v0.4.4.0
+set dark_version=24.09-v0.5.0.0
 set lzma=lzma2408
 
 rem VC-LTL version
 rem https://github.com/Chuyu-Team/VC-LTL5
-set "VC_LTL_Ver=5.1.1"
+set "VC_LTL_Ver=5.2.1"
 
 :VS_Version
 if defined APPVEYOR_BUILD_WORKER_IMAGE (
@@ -58,10 +58,10 @@ goto :End
 :CheckReqSucc
 
 :Download_7zip
-call :Download https://7-zip.org/a/lzma2408.7z lzma2409.7z
-"%_7z%" x lzma2408.7z -o"%~dp0lzma2408"
-if exist "lzma2408" (
-  cd "lzma2408"
+call :Download https://7-zip.org/a/lzma2409.7z lzma2409.7z
+"%_7z%" x lzma2409.7z -o"%~dp0lzma2409"
+if exist "lzma2409" (
+  cd "lzma2409"
 ) else (
   echo "source not found"
   exit /b 1
