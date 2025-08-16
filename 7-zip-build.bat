@@ -6,8 +6,8 @@ set "Build_Root=%~dp0"
 :Init
 rem 7-zip version
 rem https://www.7-zip.org/
-set version=7z2409
-set ztsd_dark_version=24.09-v1.5.7-R1-v0.5.0.0
+set version=7z2501
+set ztsd_dark_version=25.01-v1.5.7-R1-v0.12.0
 
 rem VC-LTL version
 rem https://github.com/Chuyu-Team/VC-LTL5
